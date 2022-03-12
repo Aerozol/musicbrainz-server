@@ -17,6 +17,7 @@ import {reduceArtistCredit}
   from '../static/scripts/common/immutable-entities';
 import entityHref from '../static/scripts/common/utility/entityHref';
 import AppDownload from '../components/home/AppDownload';
+import Supporters from '../components/home/Supporters';
 
 type BlogEntryT = {
   +title: string,
@@ -254,6 +255,10 @@ const Homepage = ({
           />
         ))}
       </div>
+    </div>
+
+    <div className="bs" id="supporters">
+      <Supporters />
     </div>
 
     <div className="bs" id="app-download">
