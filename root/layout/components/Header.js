@@ -9,20 +9,516 @@
 
 import * as React from 'react';
 
-import HeaderLogo from './HeaderLogo';
-import TopMenu from './TopMenu';
-import BottomMenu from './BottomMenu';
+import returnUri, {returnToCurrentPage} from '../../utility/returnUri';
+import {
+  isAccountAdmin, isAdmin,
+  isBannerEditor,
+  isLocationEditor,
+  isRelationshipEditor,
+  isWikiTranscluder,
+} from '../../static/scripts/common/utility/privileges';
+import {CatalystContext} from '../../context';
+import RequestLogin from '../../components/RequestLogin';
+import {VARTIST_GID} from '../../static/scripts/common/constants';
+import headerLogoSvgUrl from '../../static/images/layout/header-logo.svg';
 
-const Header = (): React.Element<'div'> => (
-  <div className="header">
-    <a className="logo" href="/" title="MusicBrainz">
-      <HeaderLogo />
+import Search from './Search';
+
+
+function userLink(userName, path) {
+  return `/user/${encodeURIComponent(userName)}${path}`;
+}
+
+type UserProp = {+user: UnsanitizedEditorT};
+
+const AccountMenu = ({
+  $c,
+  user,
+}: {
+    +$c: CatalystContextT,
+    +user: UnsanitizedEditorT,
+}) => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="accountDropdown"
+      role="button"
+    >
+      {user.name}
+      {'\xA0\u25BE'}
     </a>
-    <div className="right">
-      <TopMenu />
-      <BottomMenu />
-    </div>
-  </div>
+    <ul aria-labelledby="accountDropdown" className="dropdown-menu">
+      <li className="nav-item">
+        <a href={userLink(user.name, '')}>{l('Profile')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/account/applications">{l('Applications')}</a>
+      </li>
+      <li className="nav-item">
+        <a href={userLink(user.name, '/subscriptions/artist')}>
+          {l('Subscriptions')}
+        </a>
+      </li>
+      <li className="nav-item">
+        <a
+          href={
+            '/logout' + (
+              $c.stash.current_action_requires_auth === true
+                ? ''
+                : ('?' + returnToCurrentPage($c))
+            )
+          }
+        >
+          {l('Log Out')}
+        </a>
+      </li>
+    </ul>
+  </li>
 );
+
+const DataMenu = ({user}: UserProp) => {
+  const userName = user.name;
+  return (
+    <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+      <a
+        aria-expanded="false"
+        className="nav-link"
+        data-bs-toggle="dropdown"
+        href="#"
+        id="personalDropdown"
+        role="button"
+      >
+        {l('My Data')}
+        {'\xA0\u25BE'}
+      </a>
+      <ul aria-labelledby="personalDropdown" className="dropdown-menu">
+        <li className="nav-item">
+          <a href={userLink(userName, '/collections')}>
+            {l('My Collections')}
+          </a>
+        </li>
+        <li className="nav-item">
+          <a href={userLink(userName, '/ratings')}>{l('My Ratings')}</a>
+        </li>
+        <li className="nav-item">
+          <a href={userLink(userName, '/tags')}>{l('My Tags')}</a>
+        </li>
+        <li className="separator">
+          <a href={userLink(userName, '/edits/open')}>{l('My Open Edits')}</a>
+        </li>
+        <li className="nav-item">
+          <a href={userLink(userName, '/edits')}>{l('All My Edits')}</a>
+        </li>
+        <li className="nav-item">
+          <a href="/edit/subscribed">{l('Edits for Subscribed Entities')}</a>
+        </li>
+        <li className="nav-item">
+          <a href="/edit/subscribed_editors">
+            {l('Edits by Subscribed Editors')}
+          </a>
+        </li>
+        <li className="nav-item">
+          <a href="/edit/notes-received">{l('Notes Left on My Edits')}</a>
+        </li>
+      </ul>
+    </li>
+  );
+};
+
+const AdminMenu = ({user}: UserProp) => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="adminDropdown"
+      role="button"
+    >
+      {l('Admin')}
+      {'\xA0\u25BE'}
+    </a>
+    <ul aria-labelledby="adminDropdown" className="dropdown-menu">
+      {isLocationEditor(user) ? (
+        <li className="nav-item">
+          <a href="/area/create">{lp('Add Area', 'button/menu')}</a>
+        </li>
+      ) : null}
+
+      {isRelationshipEditor(user) ? (
+        <>
+          <li className="nav-item">
+            <a href="/instrument/create">
+              {lp('Add Instrument', 'button/menu')}
+            </a>
+          </li>
+          <li className="nav-item">
+            <a href="/genre/create">{lp('Add Genre', 'button/menu')}</a>
+          </li>
+          <li className="nav-item">
+            <a href="/relationships">{l('Edit Relationship Types')}</a>
+          </li>
+        </>
+      ) : null}
+
+      {isWikiTranscluder(user) ? (
+        <li className="nav-item">
+          <a href="/admin/wikidoc">{l('Transclude WikiDocs')}</a>
+        </li>
+      ) : null}
+
+      {isBannerEditor(user) ? (
+        <li className="nav-item">
+          <a href="/admin/banner/edit">{l('Edit Banner Message')}</a>
+        </li>
+      ) : null}
+
+      {isAccountAdmin(user) ? (
+        <>
+          <li className="nav-item">
+            <a href="/admin/attributes">{l('Edit Attributes')}</a>
+          </li>
+          <li className="nav-item">
+            <a href="/admin/statistics-events">
+              {l('Edit Statistics Events')}
+            </a>
+          </li>
+          <li className="nav-item">
+            <a href="/admin/email-search">{l('Email Search')}</a>
+          </li>
+          <li className="nav-item">
+            <a href="/admin/privilege-search">{l('Privilege Search')}</a>
+          </li>
+          <li className="nav-item">
+            <a href="/admin/locked-usernames/search">
+              {l('Locked Username Search')}
+            </a>
+          </li>
+        </>
+      ) : null}
+    </ul>
+  </li>
+);
+
+const UserMenu = () => {
+  const $c = React.useContext(CatalystContext);
+  return (
+    <>
+      {$c.user ? (
+        <>
+          <AccountMenu $c={$c} user={$c.user} />
+          <DataMenu user={$c.user} />
+          {isAdmin($c.user) ? <AdminMenu user={$c.user} /> : null}
+        </>
+      ) : (
+        <>
+          <li className="nav-item">
+            <RequestLogin $c={$c} text={l('Log In')} />
+          </li>
+          <li className="nav-item">
+            <a className="nav-link" href={returnUri($c, '/register')}>
+              {l('Create Account')}
+            </a>
+          </li>
+        </>
+      )}
+    </>
+  );
+};
+
+const AboutMenu = () => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="aboutDropdown"
+      role="button"
+    >
+      {l('About Us')}
+      {'\xA0\u25BE'}
+    </a>
+    <ul aria-labelledby="aboutDropdown" className="dropdown-menu">
+      <li className="nav-item">
+        <a href="/doc/About">{l('About MusicBrainz')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://metabrainz.org/sponsors">{l('Sponsors')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://metabrainz.org/team">{l('Team')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://www.redbubble.com/people/metabrainz/shop">{l('Shop')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://metabrainz.org/contact">{l('Contact Us')}</a>
+      </li>
+      <li className="separator">
+        <a href="/doc/About/Data_License">{l('Data Licenses')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://metabrainz.org/social-contract">{l('Social Contract')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Code_of_Conduct">{l('Code of Conduct')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://metabrainz.org/privacy">{l('Privacy Policy')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="https://metabrainz.org/gdpr">{l('GDPR Compliance')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Data_Removal_Policy">{l('Data Removal Policy')}</a>
+      </li>
+      <li className="separator">
+        <a href="/elections">{l('Auto-editor Elections')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/privileged">{l('Privileged User Accounts')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/statistics">{l('Statistics')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/statistics/timeline">{l('Timeline Graph')}</a>
+      </li>
+    </ul>
+  </li>
+);
+
+const ProductsMenu = () => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="productsDropdown"
+      role="button"
+    >
+      {l('Products')}
+      {'\xA0\u25BE'}
+    </a>
+    <ul aria-labelledby="productsDropdown" className="dropdown-menu">
+      <li className="nav-item">
+        <a href="//picard.musicbrainz.org">{l('MusicBrainz Picard')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/AudioRanger">{l('AudioRanger')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Mp3tag">{l('Mp3tag')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Yate_Music_Tagger">{l('Yate Music Tagger')}</a>
+      </li>
+      <li className="separator">
+        <a href="/doc/MusicBrainz_for_Android">
+          {l('MusicBrainz for Android')}
+        </a>
+      </li>
+      <li className="separator">
+        <a href="/doc/MusicBrainz_Server">{l('MusicBrainz Server')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/MusicBrainz_Database">{l('MusicBrainz Database')}</a>
+      </li>
+      <li className="separator">
+        <a href="/doc/Developer_Resources">{l('Developer Resources')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/MusicBrainz_API">{l('MusicBrainz API')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Live_Data_Feed">{l('Live Data Feed')}</a>
+      </li>
+    </ul>
+  </li>
+);
+
+const SearchMenu = () => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="searchDropdown"
+      role="button"
+    >
+      {l('Search')}
+      {'\xA0\u25BE'}
+    </a>
+    <ul aria-labelledby="searchDropdown" className="dropdown-menu">
+      <li className="nav-item">
+        <a href="/search">{l('Search Entities')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/search/edits">{l('Search Edits')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/tags">{l('Tags')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/cdstub/browse">{l('Top CD Stubs')}</a>
+      </li>
+    </ul>
+  </li>
+);
+
+const EditingMenu = () => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="editingDropdown"
+      role="button"
+    >
+      {l('Editing')}
+      {'\xA0\u25BE'}
+    </a>
+    <ul aria-labelledby="editingDropdown" className="dropdown-menu">
+      <li className="nav-item">
+        <a href="/artist/create">{lp('Add Artist', 'button/menu')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/label/create">{lp('Add Label', 'button/menu')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/release-group/create">
+          {lp('Add Release Group', 'button/menu')}
+        </a>
+      </li>
+      <li className="nav-item">
+        <a href="/release/add">{lp('Add Release', 'button/menu')}</a>
+      </li>
+      <li className="nav-item">
+        <a href={'/release/add?artist=' + encodeURIComponent(VARTIST_GID)}>
+          {l('Add Various Artists Release')}
+        </a>
+      </li>
+      <li className="nav-item">
+        <a href="/recording/create">
+          {lp('Add Standalone Recording', 'button/menu')}
+        </a>
+      </li>
+      <li className="nav-item">
+        <a href="/work/create">{lp('Add Work', 'button/menu')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/place/create">{lp('Add Place', 'button/menu')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/series/create">{lp('Add Series', 'button/menu')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/event/create">{lp('Add Event', 'button/menu')}</a>
+      </li>
+      <li className="separator">
+        <a href="/vote">{l('Vote on Edits')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/reports">{l('Reports')}</a>
+      </li>
+    </ul>
+  </li>
+);
+
+const DocumentationMenu = () => (
+  <li className="nav-item dropdown list-unstyled" tabIndex="-1">
+    <a
+      aria-expanded="false"
+      className="nav-link"
+      data-bs-toggle="dropdown"
+      href="#"
+      id="documentationDropdown"
+      role="button"
+    >
+      {l('Documentation')}
+      {'\xA0\u25BE'}
+    </a>
+    <ul aria-labelledby="documentationDropdown" className="dropdown-menu">
+      <li className="nav-item">
+        <a href="/doc/Beginners_Guide">{l('Beginners Guide')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Style">{l('Style Guidelines')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/How_To">{l('How Tos')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/Frequently_Asked_Questions">{l('FAQs')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/doc/MusicBrainz_Documentation">
+          {l('Documentation Index')}
+        </a>
+      </li>
+      <li className="separator">
+        <a href="/doc/Edit_Types">{l('Edit Types')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/relationships">{l('Relationship Types')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/instruments">{l('Instrument List')}</a>
+      </li>
+      <li className="nav-item">
+        <a href="/genres">{l('Genre List')}</a>
+      </li>
+      <li className="separator">
+        <a href="/doc/Development">{l('Development')}</a>
+      </li>
+    </ul>
+  </li>
+);
+
+const Header = (): React.Element<'nav'> => {
+  const $c = React.useContext(CatalystContext);
+  return (
+    <nav className="navbar navbar-expand-lg navbar-light bg-light">
+      <div className="container-fluid">
+        <a className="navbar-brand" href="/" title="MusicBrainz">
+          <img
+            alt="MusicBrainz"
+            className="logo"
+            src={headerLogoSvgUrl}
+          />
+        </a>
+        <button
+          aria-controls="navbarToggle"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+          className="navbar-toggler"
+          data-bs-target="#navbarToggle"
+          data-bs-toggle="collapse"
+          type="button"
+        >
+          <span className="navbar-toggler-icon" />
+        </button>
+        <div className="collapse navbar-collapse" id="navbarToggle">
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            <UserMenu />
+            <AboutMenu />
+            <ProductsMenu />
+            <SearchMenu />
+            {$c.user ? <EditingMenu /> : null}
+            <DocumentationMenu />
+            <Search />
+          </ul>
+        </div>
+      </div>
+    </nav>
+  );
+};
 
 export default Header;
