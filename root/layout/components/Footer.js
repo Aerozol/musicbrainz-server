@@ -8,9 +8,11 @@
  */
 
 import * as React from 'react';
+import Dropdown from 'bootstrap/js/src/dropdown';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faTwitter, faFacebook, faInstagram, faLinkedin}
   from '@fortawesome/free-brands-svg-icons';
+import {useEffect} from 'react';
 
 import {capitalize} from '../../static/scripts/common/utility/strings';
 import {returnToCurrentPage} from '../../utility/returnUri';
@@ -24,6 +26,7 @@ import acousticbrainzLogo
 import picardLogo from '../../static/images/meb-icons/Picard.svg';
 import bookbrainzLogo from '../../static/images/meb-icons/BookBrainz.svg';
 import caaLogo from '../../static/images/meb-icons/CoverArtArchive.svg';
+import * as manifest from '../../static/manifest';
 
 function languageName(language, selected) {
   if (!language) {
@@ -120,6 +123,14 @@ const LanguageMenu = ({
 );
 
 const Footer = (): React.Element<'section'> => {
+  useEffect(() => {
+    let dropdownElementList =
+        [].slice.call(document.getElementById('language-dropdown'));
+    dropdownElementList.map(function (dropdownToggleEl) {
+      return new Dropdown(dropdownToggleEl);
+    });
+  });
+
   const $c = React.useContext(CatalystContext);
   const serverLanguages = $c.stash.server_languages;
 
@@ -514,8 +525,12 @@ const Footer = (): React.Element<'section'> => {
           </div>
         </div>
       </div>
+      {manifest.js('common/components/Footer', {async: 'async'})}
     </section>
   );
 };
 
-export default Footer;
+export default (hydrate(
+  'section.footer',
+  Footer,
+));

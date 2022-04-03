@@ -48,6 +48,7 @@ const entries = [
   'common/components/AcoustIdCell',
   'common/components/ArtistRoles',
   'common/components/AttributeList',
+  'common/components/Footer',
   'common/components/ReleaseEvents',
   'common/components/TaggerIcon',
   'common/components/WorkArtists',
