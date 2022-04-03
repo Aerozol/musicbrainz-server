@@ -304,10 +304,7 @@ const Layout = ({
         {$c.session?.merger && !$c.stash.hide_merge_helper /*:: === true */
           ? <MergeHelper merger={$c.session.merger} />
           : null}
-
-        <div className="bs">
-          <Footer />
-        </div>
+        <Footer />
       </body>
     </html>
   );
